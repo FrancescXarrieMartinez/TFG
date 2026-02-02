@@ -22,6 +22,7 @@ function main($argc, $argv) {
     }
 
     $command = $argv[1];
+    fwrite(STDERR, "command=$command\n");
 
     try {
         switch ($command) {
@@ -54,14 +55,21 @@ function main($argc, $argv) {
                 
                 $cipher = new RijndaelCore($key, $iv);
                 
-                // Just decrypt and return the result
-                $result = @$cipher->decrypt($ciphertext);
+                error_reporting(0);  // Suppress warnings
+                $result = $cipher->decrypt($ciphertext);
+                error_reporting(E_ALL);
+
+                // Base64 encode the result to handle binary data safely
+                if ($result === false || $result === null) {
+                    $result_b64 = '';
+                } else {
+                    $result_b64 = base64_encode($result);
+                }
                 
                 echo json_encode([
                     'status' => 'success',
-                    'plaintext' => $result
+                    'plaintext_b64' => $result_b64
                 ]) . "\n";
-                break;
                 break;
 
             default:

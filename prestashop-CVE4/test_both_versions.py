@@ -50,10 +50,11 @@ def test_version(version, php_path):
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
     )
     data = json.loads(result.stdout)
-    plaintext = data.get('plaintext')
+    plaintext_b64 = data.get('plaintext_b64', '')
     
     # Apply the oracle logic from exploit
-    valid = (plaintext is not False and plaintext is not None and plaintext != '')
+    # Empty plaintext_b64 means decrypt failed
+    valid = bool(plaintext_b64)
     print(f"✓ Valid cookie check: {valid}")
     
     if not valid:
@@ -68,10 +69,10 @@ def test_version(version, php_path):
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
     )
     data = json.loads(result.stdout)
-    plaintext_corrupted = data.get('plaintext')
+    plaintext_b64_corrupted = data.get('plaintext_b64', '')
     
     # Apply the oracle logic from exploit
-    valid_corrupted = (plaintext_corrupted is not False and plaintext_corrupted is not None and plaintext_corrupted != '')
+    valid_corrupted = bool(plaintext_b64_corrupted)
     print(f"✓ Corrupted cookie check: {valid_corrupted}")
     
     if valid_corrupted:
