@@ -46,11 +46,14 @@ def test_version(version, php_path):
     
     # Test valid cookie
     result = subprocess.run(
-        [php_path, f"php-source/{version}/oracle_adapter.php", "check", cookie, key, iv],
+        [php_path, f"php-source/{version}/oracle_adapter.php", "decrypt", cookie, key, iv],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
     )
     data = json.loads(result.stdout)
-    valid = data['valid_padding']
+    plaintext = data.get('plaintext')
+    
+    # Apply the oracle logic from exploit
+    valid = (plaintext is not False and plaintext is not None and plaintext != '')
     print(f"✓ Valid cookie check: {valid}")
     
     if not valid:
@@ -61,11 +64,14 @@ def test_version(version, php_path):
     corrupted = "X" + cookie[1:]
 
     result = subprocess.run(
-        [php_path, f"php-source/{version}/oracle_adapter.php", "check", corrupted, key, iv],
+        [php_path, f"php-source/{version}/oracle_adapter.php", "decrypt", corrupted, key, iv],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
     )
     data = json.loads(result.stdout)
-    valid_corrupted = data['valid_padding']
+    plaintext_corrupted = data.get('plaintext')
+    
+    # Apply the oracle logic from exploit
+    valid_corrupted = (plaintext_corrupted is not False and plaintext_corrupted is not None and plaintext_corrupted != '')
     print(f"✓ Corrupted cookie check: {valid_corrupted}")
     
     if valid_corrupted:

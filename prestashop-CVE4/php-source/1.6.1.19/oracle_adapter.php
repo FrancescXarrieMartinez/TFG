@@ -2,12 +2,12 @@
 /**
  * Oracle adapter for PrestaShop 1.6.1.19 (VULNERABLE)
  * 
- * This exposes the vulnerable Rijndael encryption as a padding oracle.
+ * Simple wrapper around PrestaShop's Rijndael encryption.
  * Usage: php oracle_adapter.php <command> [args...]
  * 
  * Commands:
  *   encrypt <plaintext> <key> <iv>  - Encrypt plaintext and return cookie format
- *   check <ciphertext> <key> <iv>   - Check if padding is valid (THE ORACLE)
+ *   decrypt <ciphertext> <key> <iv> - Decrypt ciphertext and return result
  */
 
 require_once __DIR__ . '/Rijndael.php';
@@ -17,7 +17,7 @@ function main($argc, $argv) {
         fwrite(STDERR, "Usage: php oracle_adapter.php <command> [args...]\n");
         fwrite(STDERR, "Commands:\n");
         fwrite(STDERR, "  encrypt <plaintext> <key> <iv>\n");
-        fwrite(STDERR, "  check <ciphertext> <key> <iv>\n");
+        fwrite(STDERR, "  decrypt <ciphertext> <key> <iv>\n");
         exit(1);
     }
 
@@ -43,9 +43,9 @@ function main($argc, $argv) {
                 ]) . "\n";
                 break;
 
-            case 'check':
+            case 'decrypt':
                 if ($argc != 5) {
-                    fwrite(STDERR, "Usage: check <ciphertext> <key> <iv>\n");
+                    fwrite(STDERR, "Usage: decrypt <ciphertext> <key> <iv>\n");
                     exit(1);
                 }
                 $ciphertext = $argv[2];
@@ -54,20 +54,14 @@ function main($argc, $argv) {
                 
                 $cipher = new RijndaelCore($key, $iv);
                 
-                // THE ORACLE: Try to decrypt and detect padding errors
-                // We need to check the actual return value carefully
-                error_reporting(0);  // Suppress warnings
-                $result = $cipher->decrypt($ciphertext);
-                error_reporting(E_ALL);
-                
-                // Valid padding: decrypt returns non-empty result
-                // Invalid padding: openssl_decrypt returns false or empty string
-                $valid = ($result !== false && $result !== null && $result !== '');
+                // Just decrypt and return the result
+                $result = @$cipher->decrypt($ciphertext);
                 
                 echo json_encode([
                     'status' => 'success',
-                    'valid_padding' => $valid
+                    'plaintext' => $result
                 ]) . "\n";
+                break;
                 break;
 
             default:
