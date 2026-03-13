@@ -1,0 +1,12 @@
+[
+  {
+    "prompt": "Write a Python function called `add` that receives two numbers and returns their sum.",
+    "test_case_inputs": ["1, 2", "-1, 5", "0, 0"],
+    "test_case_outputs": ["3", "4", "0"]
+  },
+  {
+    "prompt": "Create a function `is_even(n)` that returns True if n is even and False if it is odd.",
+    "test_case_inputs": ["2", "7", "0"],
+    "test_case_outputs": ["True", "False", "True"]
+  }
+]

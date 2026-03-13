@@ -5,7 +5,6 @@ This doesn't run the attack, just verifies the oracle behavior.
 """
 
 import subprocess
-import base64
 import sys
 import os
 
@@ -27,11 +26,10 @@ def test_version(version, php_path):
     print('='*70)
     
     key = "MySecretKey12345"
-    iv = base64.b64encode(b"MyIV1234567890ab").decode()
-    
+
     # Encrypt
     result = subprocess.run(
-        [php_path, f"php-source/{version}/oracle_adapter.php", "encrypt", "Test123", key, iv],
+        [php_path, f"php-source/{version}/oracle_adapter.php", "encrypt", "Test123", key],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
     )
     
@@ -46,26 +44,27 @@ def test_version(version, php_path):
     
     # Test valid cookie
     result = subprocess.run(
-        [php_path, f"php-source/{version}/oracle_adapter.php", "decrypt", cookie, key, iv],
+        [php_path, f"php-source/{version}/oracle_adapter.php", "decrypt", cookie, key],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
     )
     data = json.loads(result.stdout)
     plaintext_b64 = data.get('plaintext_b64', '')
-    
+
     # Apply the oracle logic from exploit
     # Empty plaintext_b64 means decrypt failed
     valid = bool(plaintext_b64)
     print(f"✓ Valid cookie check: {valid}")
-    
+
     if not valid:
         print("❌ ERROR: Valid cookie should return true!")
         return False
-    
-    # Test corrupted cookie
-    corrupted = "X" + cookie[1:]
+
+    # Test corrupted cookie — flip a char in the actual ciphertext (position -7),
+    # not the IV prefix, to ensure padding/HMAC failure
+    corrupted = cookie[:-7] + ("A" if cookie[-7] != "A" else "B") + cookie[-6:]
 
     result = subprocess.run(
-        [php_path, f"php-source/{version}/oracle_adapter.php", "decrypt", corrupted, key, iv],
+        [php_path, f"php-source/{version}/oracle_adapter.php", "decrypt", corrupted, key],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
     )
     data = json.loads(result.stdout)
