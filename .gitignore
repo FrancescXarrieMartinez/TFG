@@ -1,1 +1,8 @@
 .venv
+
+# Compiled C oracle adapters (built via `make` in each case dir)
+cve-2016-0736/**/oracle
+*.o
+
+# Compiled Java oracle adapters (built via `make` in each case dir)
+cve-2019-12422/**/*.class

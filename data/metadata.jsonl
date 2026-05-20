@@ -1,3 +1,7 @@
 {"id": "cryptopals-17", "group_id": "cryptopals-17", "source": "ctf", "source_ref": "https://cryptopals.com/sets/3/challenges/17", "language": "python", "label": "vulnerable"}
 {"id": "cryptopals-47", "group_id": "cryptopals-47", "source": "ctf", "source_ref": "https://cryptopals.com/sets/6/challenges/47", "language": "python", "label": "vulnerable"}
 {"id": "picoctf-magic", "group_id": "picoctf-magic", "source": "ctf", "source_ref": "https://ctftime.org/task/6795", "language": "python", "label": "vulnerable"}
+{"id": "cve-2016-0736-vuln", "group_id": "cve-2016-0736", "source": "real_cve", "source_ref": "https://nvd.nist.gov/vuln/detail/CVE-2016-0736", "language": "c", "label": "vulnerable"}
+{"id": "cve-2016-0736-safe", "group_id": "cve-2016-0736", "source": "real_cve", "source_ref": "https://nvd.nist.gov/vuln/detail/CVE-2016-0736", "language": "c", "label": "safe"}
+{"id": "cve-2019-12422-vuln", "group_id": "cve-2019-12422", "source": "real_cve", "source_ref": "https://issues.apache.org/jira/browse/SHIRO-721", "language": "java", "label": "vulnerable"}
+{"id": "cve-2019-12422-safe", "group_id": "cve-2019-12422", "source": "real_cve", "source_ref": "https://issues.apache.org/jira/browse/SHIRO-721", "language": "java", "label": "safe"}
