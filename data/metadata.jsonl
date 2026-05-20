@@ -1,0 +1,3 @@
+{"id": "cryptopals-17", "group_id": "cryptopals-17", "source": "ctf", "source_ref": "https://cryptopals.com/sets/3/challenges/17", "language": "python", "label": "vulnerable"}
+{"id": "cryptopals-47", "group_id": "cryptopals-47", "source": "ctf", "source_ref": "https://cryptopals.com/sets/6/challenges/47", "language": "python", "label": "vulnerable"}
+{"id": "picoctf-magic", "group_id": "picoctf-magic", "source": "ctf", "source_ref": "https://ctftime.org/task/6795", "language": "python", "label": "vulnerable"}
