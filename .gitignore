@@ -6,3 +6,5 @@ cve-2016-0736/**/oracle
 
 # Compiled Java oracle adapters (built via `make` in each case dir)
 cve-2019-12422/**/*.class
+cve-2010-2057/**/*.class
+cve-2010-3300/**/*.class
