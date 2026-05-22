@@ -1,0 +1,10 @@
+# Line-ending policy (Windows/WSL/VS Code safe)
+*.sbatch  text eol=lf
+*.sh      text eol=lf
+oracle    text eol=lf
+*.py      text eol=lf
+*.java    text eol=lf
+*.c       text eol=lf
+*.h       text eol=lf
+*.jsonl   text eol=lf
+*.json    -text
