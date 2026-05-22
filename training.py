@@ -14,8 +14,8 @@ from trl import GRPOConfig, GRPOTrainer
 PatchFastRL("GRPO", FastLanguageModel)
 
 # Basic parameters
-model_name = "./devstral-small-2" # Change this to the real path
-max_seq_length = 4096  # Increased to accommodate long code-embedding prompts
+model_name = "/data/upftfg31/shared/devstral-small-2" # Absolute path on the Pirineus cluster
+max_seq_length = 8192  # >= max_prompt_length + max_completion_length (4096+2048=6144); Devstral supports long context
 
 # 2. Load the base model and Tokenizer with Unsloth
 model, tokenizer = FastLanguageModel.from_pretrained(
@@ -39,6 +39,25 @@ model = FastLanguageModel.get_peft_model(
 # 4. Prepare your Dataset
 # The dataset must have a 'prompt' column. The model will generate the response.
 dataset = load_dataset("json", data_files="dataset.json", split="train")
+
+# Wrap each raw prompt in Devstral's instruct chat template so the base instruct
+# model sees the format it was trained on. tokenize=False keeps GRPO's text-prompt
+# interface; add_generation_prompt=True appends the assistant turn marker so the
+# model continues as the assistant.
+# PITFALL TO VERIFY: apply_chat_template emits the leading BOS token (<s>). If
+# GRPO's tokenizer also prepends a BOS at tokenization time you'll get a double
+# BOS. Verify once on the cluster (decode one tokenized prompt); if it doubles,
+# pass add_special_tokens=False where the trainer tokenizes, or strip the leading
+# BOS here.
+def _to_chat_prompt(example):
+    example["prompt"] = tokenizer.apply_chat_template(
+        [{"role": "user", "content": example["prompt"]}],
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+    return example
+
+dataset = dataset.map(_to_chat_prompt)
 
 # 5. Define your Reward function (Verifiable / RLVR)
 # TRL passes 'prompts', 'completions', and the remaining JSON columns as kwargs.
@@ -233,7 +252,9 @@ training_args = GRPOConfig(
     num_generations=4,            # How many responses to generate per prompt for comparison
     bf16=True,                    # Key for H100
     logging_steps=10,
-    max_steps=500,                # Adjust based on your dataset
+    report_to="none",             # Avoid wandb hanging on the offline cluster
+    # SMOKE TEST: max_steps=2. Change to 500 for real training.
+    max_steps=2,                  # Adjust based on your dataset
 )
 
 # 7. Initialize the TRL Trainer

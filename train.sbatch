@@ -4,6 +4,7 @@
 #   Check status:     squeue -u $USER
 #   Cancel job:       scancel <job_id>   (check logs first to see if it's failing)
 #
+#SBATCH --account=upftfg31_normal
 #SBATCH --job-name=rlvr_devstral
 #SBATCH --output=logs/training_%j.out
 #SBATCH --error=logs/training_%j.err
