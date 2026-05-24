@@ -8,11 +8,14 @@ import subprocess
 import torch
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, PeftModel
 from trl import GRPOConfig, GRPOTrainer
 
 model_name = "/data/upftfg31/fxarrie/devstral-small-2507"
 max_seq_length = 4096
+
+# Held-out test groups (mirrored from sft_training.py so SFT and GRPO see the same train set)
+TEST_GROUP_IDS = {"cve-2016-0736", "prestashop-CVE4"}
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 if tokenizer.pad_token is None:
@@ -34,10 +37,20 @@ lora_config = LoraConfig(
     bias="none",
     task_type="CAUSAL_LM",
 )
-model = get_peft_model(model, lora_config)
+sft_adapter_path = os.environ.get("SFT_ADAPTER_PATH", None)
+if sft_adapter_path:
+    # Config D: SFT then GRPO — start GRPO from the SFT'd LoRA adapter
+    print(f"Loading SFT adapter from {sft_adapter_path} (Config D: SFT then GRPO)")
+    model = PeftModel.from_pretrained(model, sft_adapter_path, is_trainable=True)
+else:
+    # Config C: GRPO only — apply fresh LoRA on top of base model
+    print("No SFT_ADAPTER_PATH set; using fresh LoRA (Config C: GRPO only)")
+    model = get_peft_model(model, lora_config)
 model.print_trainable_parameters()
 
 dataset = load_dataset("json", data_files="dataset.json", split="train")
+dataset = dataset.filter(lambda e: e["group_id"] not in TEST_GROUP_IDS)
+print(f"Dataset: filtered to {len(dataset)} train entries (held out: {sorted(TEST_GROUP_IDS)})")
 
 def _to_chat_prompt(example):
     example["prompt"] = tokenizer.apply_chat_template(
