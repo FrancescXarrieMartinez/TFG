@@ -10,7 +10,8 @@
 #SBATCH --error=logs/training_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=32
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=128G                 # Request enough RAM
 #SBATCH --partition=gpu 
 #SBATCH --gres=gpu:h100:1          # Request 1 GPU H100
 #SBATCH --time=24:00:00
