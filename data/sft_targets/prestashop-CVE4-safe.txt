@@ -1,0 +1,17 @@
+NOT VULNERABLE.
+
+This version authenticates the encrypted cookie before it ever decrypts it, matching
+PrestaShop's 1.6.1.20 fix for CVE-2018-13784. An HMAC-SHA256 tag is computed over
+IV || "rijndael-128" || ciphertext (encrypt-then-MAC), using a MAC key derived from the
+passphrase and IV via a salted S2K key-derivation function, and is stored alongside the
+ciphertext. On decryption decrypt() recomputes the tag and compares it to the stored one,
+returning false before the AES-128-CBC openssl_decrypt is ever called. Because any
+modification to the IV or ciphertext changes the authenticated input, a tampered cookie
+fails the MAC check and is rejected before the decryption and PKCS#7 padding check are
+reached.
+
+As a result the attacker never observes a padding-validity signal: every manipulated cookie
+returns the same empty result regardless of its padding, so there is no padding oracle. This
+integrity check — encrypt-then-MAC, with the MAC verified before decryption — is exactly what
+defeats the Vaudenay attack. Without the ability to forge a valid MAC, the attacker cannot
+distinguish valid from invalid padding and cannot recover any plaintext.
