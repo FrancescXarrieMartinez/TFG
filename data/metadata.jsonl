@@ -13,3 +13,18 @@
 {"id": "cve-2010-3300-safe", "group_id": "cve-2010-3300", "source": "real_cve", "source_ref": "https://nvd.nist.gov/vuln/detail/CVE-2010-3300", "language": "java", "label": "safe"}
 {"id": "ctf-des-padding", "group_id": "ctf-des-padding", "source": "ctf", "source_ref": "self-authored, inspired by HTB 'I know Mag1k'", "language": "python", "label": "vulnerable"}
 {"id": "ctf-custom-padding", "group_id": "ctf-custom-padding", "source": "ctf", "source_ref": "self-authored, inspired by HTB 'Fibopadcci'", "language": "python", "label": "vulnerable"}
+{"id": "cryptopals17-syn-01", "group_id": "cryptopals-17", "source": "synthetic", "source_ref": "synthetic, seeded from cryptopals-17", "language": "python", "label": "vulnerable"}
+{"id": "cryptopals17-syn-02", "group_id": "cryptopals-17", "source": "synthetic", "source_ref": "synthetic, seeded from cryptopals-17", "language": "python", "label": "vulnerable"}
+{"id": "cryptopals17-syn-03", "group_id": "cryptopals-17", "source": "synthetic", "source_ref": "synthetic, seeded from cryptopals-17", "language": "python", "label": "vulnerable"}
+{"id": "cryptopals17-syn-04", "group_id": "cryptopals-17", "source": "synthetic", "source_ref": "synthetic, seeded from cryptopals-17", "language": "python", "label": "vulnerable"}
+{"id": "cryptopals17-syn-05", "group_id": "cryptopals-17", "source": "synthetic", "source_ref": "synthetic, seeded from cryptopals-17", "language": "python", "label": "vulnerable"}
+{"id": "cryptopals17-syn-06", "group_id": "cryptopals-17", "source": "synthetic", "source_ref": "synthetic, seeded from cryptopals-17", "language": "python", "label": "vulnerable"}
+{"id": "picoctf-magic-syn-01", "group_id": "picoctf-magic", "source": "synthetic", "source_ref": "synthetic, seeded from picoctf-magic", "language": "python", "label": "vulnerable"}
+{"id": "picoctf-magic-syn-02", "group_id": "picoctf-magic", "source": "synthetic", "source_ref": "synthetic, seeded from picoctf-magic", "language": "python", "label": "vulnerable"}
+{"id": "picoctf-magic-syn-03", "group_id": "picoctf-magic", "source": "synthetic", "source_ref": "synthetic, seeded from picoctf-magic", "language": "python", "label": "vulnerable"}
+{"id": "picoctf-magic-syn-04", "group_id": "picoctf-magic", "source": "synthetic", "source_ref": "synthetic, seeded from picoctf-magic", "language": "python", "label": "vulnerable"}
+{"id": "cve-2019-12422-vuln-syn-01", "group_id": "cve-2019-12422", "source": "synthetic", "source_ref": "synthetic, seeded from cve-2019-12422-vuln", "language": "java", "label": "vulnerable"}
+{"id": "cve-2019-12422-vuln-syn-02", "group_id": "cve-2019-12422", "source": "synthetic", "source_ref": "synthetic, seeded from cve-2019-12422-vuln", "language": "java", "label": "vulnerable"}
+{"id": "cve-2019-12422-vuln-syn-03", "group_id": "cve-2019-12422", "source": "synthetic", "source_ref": "synthetic, seeded from cve-2019-12422-vuln", "language": "java", "label": "vulnerable"}
+{"id": "cve-2019-12422-vuln-syn-04", "group_id": "cve-2019-12422", "source": "synthetic", "source_ref": "synthetic, seeded from cve-2019-12422-vuln", "language": "java", "label": "vulnerable"}
+{"id": "cve-2019-12422-vuln-syn-05", "group_id": "cve-2019-12422", "source": "synthetic", "source_ref": "synthetic, seeded from cve-2019-12422-vuln", "language": "java", "label": "vulnerable"}
