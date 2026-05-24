@@ -1,0 +1,7 @@
+# Apache Shiro 1.4.1 batch (5 vulnerable variations)
+
+This batch contains five synthetic **VULNERABLE** entries derived from the seed at `dataset.json` index 7 (`cve-2019-12422-vuln`), the real Apache Shiro 1.4.1 "remember me" cookie bug (CVE-2019-12422): AES-CBC with no authentication, which is a padding oracle. It was the first Java batch and the first built from a real CVE, and all five entries are in the main dataset.
+
+The five variations place the same Shiro code in different settings -- a multi-tenant SaaS dashboard, an HR portal, an internal API gateway, a self-hosted LMS, and a devops dashboard -- and organise the Java differently each time (an inline servlet filter, a helper class, a static utility, a Spring component, and module-level statics). Because this comes from a real CVE, the actual Apache Shiro source snippet is **copied verbatim into every entry**, identical down to the byte, so each one stays a faithful reproduction of the real code rather than something invented.
+
+Verification ran the reference exploit against the real adapter; it recovered the plaintext in every case, in under a second each (the Java adapter is driven in a persistent "serve" mode, so the couple of thousand oracle queries pay the start-up cost only once). For similarity, because the shared verbatim snippet would inflate a raw comparison, we compared only the authored portion of each prompt; the most similar pair scored 0.48, well under the 0.85 limit.

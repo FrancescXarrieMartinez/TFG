@@ -1,0 +1,7 @@
+# Apache Shiro 1.4.2 batch (6 safe variations)
+
+This batch contains six synthetic **NOT_VULNERABLE** entries derived from the seed at `dataset.json` index 8 (`cve-2019-12422-safe`), which shows Apache Shiro's 1.4.2 fix for CVE-2019-12422: the cipher was switched to **AES-GCM**, an authenticated mode that detects tampering, so there is no padding oracle. It was the first safe batch, and all six entries are in the main dataset.
+
+Safe entries flip the methodology. The expected answer is "not vulnerable" and there is nothing to recover, so each entry's `expected_plaintext` is left null. The static check requires the code to *contain* the GCM machinery (and to avoid the old CBC padding pattern). And the smoke test is **inverted**: we run the vulnerable-side reference exploit against the GCM adapter and require it to **fail** -- which it did for all six, giving up in a fraction of a second because GCM rejects every tampered message. As with the Shiro vulnerable batch, the real 1.4.2 source snippet is copied verbatim into every entry.
+
+The six variations differ in scenario and in how the Java is organised (a servlet filter, a helper class, a static utility, a Spring component, module-level statics, and a builder factory); GCM itself has one correct shape, so the code structure is what carries the diversity. Measured on the authored portion of the prompts, the most similar pair scored 0.61, under the 0.85 limit.

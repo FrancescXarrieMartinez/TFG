@@ -1,0 +1,7 @@
+# Cryptopals-17 batch (6 vulnerable variations)
+
+This batch contains six synthetic **VULNERABLE** entries derived from the seed at `dataset.json` index 2 (`cryptopals-17`), a Python example of AES-128-CBC code with a padding oracle. It was the pilot batch for the whole synthetic effort, and all six entries are now part of the main dataset.
+
+Every entry keeps the same flaw -- decryption that reveals whether the PKCS#7 padding was valid -- but changes the surface so the six prompts read as genuinely different problems. The cover stories range from a session-cookie service and an encrypted-URL validator to a crypto-homework service, an internal ticket flow, a legacy admin panel, and a student write-up. The code is organised differently each time and uses a different padding-check idiom in each entry (an explicit `if`, a `try/except` around `unpad`, a walrus one-liner, a helper function, a variable-extract, and a nested `if`), and each uses its own key and secret message.
+
+Each entry was verified two ways. The project's reference exploit was run against the real adapter and recovered the expected plaintext every time -- these Python exploits make one process call per oracle query, so each run took roughly one to two minutes. And the prompts were checked for mutual similarity: the most similar pair scored 0.55, comfortably under the 0.85 limit, so no two entries are near-duplicates.

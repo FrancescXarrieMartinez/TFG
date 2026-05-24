@@ -1,0 +1,7 @@
+# OWASP ESAPI batch (4 safe variations) -- final batch
+
+This batch contains four synthetic **NOT_VULNERABLE** entries derived from the seed at `dataset.json` index 12 (`cve-2010-3300-safe`), the OWASP ESAPI 2.0 fix for CVE-2010-3300. It uses the same protection as the MyFaces batch -- AES-CBC with an **HMAC verified before decryption** -- but in a different setting: ESAPI is a security *library*, so the variations show its Encryptor / CipherText API rather than a web framework. This was the final batch, and all four entries are in the main dataset, which now stands at 45 entries.
+
+Like the other safe batches, the answer is "not vulnerable", `expected_plaintext` is null, and the vulnerable-side exploit must **fail** against the adapter -- which it did for all four. The real ESAPI source snippet is copied verbatim into every entry; note that this snippet is at the library-API level and doesn't itself spell out the low-level cipher and HMAC calls, so each entry's small self-contained reproduction supplies them.
+
+The four variations differ in scenario (session state, microservice tokens, audit logging, and a generic state-protection helper) and in code structure (a helper class, a static utility, a builder factory, and module-level statics). As with MyFaces, similarity is measured on the authored portion because the rest is shared verbatim; the most similar pair scored 0.73, under the 0.85 limit.
