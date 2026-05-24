@@ -18,4 +18,5 @@
 module load conda
 conda activate unsloth_env
 module load java/23.0.1
+export RLVR_OUTPUT_DIR=devstral-rlvr-c-lora
 python training.py

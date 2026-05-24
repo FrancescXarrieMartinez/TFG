@@ -111,12 +111,9 @@ train_dataset = train_dataset.map(
 )
 
 # 5. Configure SFT training
-# Smoke-test values: max_steps=2 confirms the machinery runs end-to-end.
-# For real training, comment out max_steps and uncomment num_train_epochs.
 sft_config = SFTConfig(
     output_dir="outputs_sft",
-    max_steps=2,                       # SMOKE TEST. For real training: use num_train_epochs=3 below
-    # num_train_epochs=3,
+    num_train_epochs=3,
     per_device_train_batch_size=1,
     gradient_accumulation_steps=4,
     learning_rate=2e-4,                # standard LoRA SFT rate (QLoRA paper, HF defaults)
@@ -125,7 +122,7 @@ sft_config = SFTConfig(
     report_to="none",
     warmup_ratio=0.1,
     max_length=max_seq_length,
-    save_strategy="no",                # smoke test: don't save intermediate checkpoints
+    save_strategy="epoch",
 )
 
 # 6. Initialize trainer

@@ -185,7 +185,7 @@ training_args = GRPOConfig(
     bf16=True,
     logging_steps=10,
     report_to="none",
-    max_steps=2,
+    max_steps=200,
 )
 
 trainer = GRPOTrainer(
@@ -199,6 +199,8 @@ trainer = GRPOTrainer(
 print("Starting RLVR training...")
 trainer.train()
 
-model.save_pretrained("devstral-rlvr-lora")
-tokenizer.save_pretrained("devstral-rlvr-lora")
+output_dir = os.environ.get("RLVR_OUTPUT_DIR", "devstral-rlvr-lora")
+model.save_pretrained(output_dir)
+tokenizer.save_pretrained(output_dir)
+print(f"Saved adapter to {output_dir}")
 print("Training complete and saved!")
