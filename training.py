@@ -153,10 +153,12 @@ def verifiable_reward_function(prompts, completions, test_case_inputs, test_case
             try:
                 r = subprocess.run(['python3', tmp_exploit, oracle_path, key, ciphertext],
                                    env={**os.environ, 'ORACLE_LOG': tmp_log},
-                                   capture_output=True, text=True, timeout=180)
-                run_stdout = r.stdout
+                                   capture_output=True, timeout=180)
+                # Decode stdout manually with errors='replace' so non-UTF-8 bytes
+                # from arbitrary exploit code don't crash the reward function.
+                run_stdout = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
             except subprocess.TimeoutExpired as exc:
-                run_stdout = (exc.stdout or b'').decode(errors='replace') if isinstance(exc.stdout, bytes) else (exc.stdout or '')
+                run_stdout = (exc.stdout or b'').decode('utf-8', errors='replace') if isinstance(exc.stdout, bytes) else (exc.stdout or '')
             total_calls = _count_log_calls(tmp_log)
             found_valid = _log_has_valid_padding(tmp_log)
             if plaintext in run_stdout.strip():
@@ -165,7 +167,10 @@ def verifiable_reward_function(prompts, completions, test_case_inputs, test_case
                 score = max(score, 0.5)
             elif total_calls >= 200:
                 score = max(score, 0.2)
-        except (json.JSONDecodeError, KeyError, OSError, subprocess.TimeoutExpired):
+        except Exception as e:
+            # Catch-all so a single bad exploit can't crash a multi-hour training run.
+            # WARNING lines are logged so we can review what failed after each run.
+            print(f"WARNING: reward function caught {type(e).__name__}: {e}", flush=True)
             pass
         finally:
             for path in [tmp_exploit, tmp_log]:
