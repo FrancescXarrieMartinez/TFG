@@ -149,7 +149,7 @@ def main(argv):
 
         valid = _is_conformant(c, n, d, k)
         # Non-empty sentinel when padding is VALID, empty string when INVALID
-        result_b64 = base64.b64encode(b"\x00").decode() if valid else ""
+        result_b64 = base64.b64encode(b"\x01").decode() if valid else ""
 
         _log_oracle(valid, (time.time() - start) * 1000.0)
         print(json.dumps({"status": "success", "plaintext_b64": result_b64}))
@@ -174,7 +174,7 @@ def main(argv):
                 valid = _is_conformant(c, n, d, k)
             except Exception:
                 valid = False
-            result_b64 = base64.b64encode(b"\x00").decode() if valid else ""
+            result_b64 = base64.b64encode(b"\x01").decode() if valid else ""
             _log_oracle(valid, (time.time() - start) * 1000.0)
             sys.stdout.write(json.dumps({"status": "success", "plaintext_b64": result_b64}) + "\n")
             sys.stdout.flush()

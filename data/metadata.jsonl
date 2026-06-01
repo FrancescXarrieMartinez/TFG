@@ -1,5 +1,5 @@
-{"id": "prestashop-CVE4-vuln", "group_id": "cve-2018-13784", "source": "real_cve", "source_ref": "https://nvd.nist.gov/vuln/detail/CVE-2018-13784", "language": "php", "label": "vulnerable"}
-{"id": "prestashop-CVE4-safe", "group_id": "cve-2018-13784", "source": "real_cve", "source_ref": "https://nvd.nist.gov/vuln/detail/CVE-2018-13784", "language": "php", "label": "safe"}
+{"id": "prestashop-CVE4-vuln", "group_id": "prestashop-CVE4", "source": "real_cve", "source_ref": "https://nvd.nist.gov/vuln/detail/CVE-2018-13784", "language": "php", "label": "vulnerable"}
+{"id": "prestashop-CVE4-safe", "group_id": "prestashop-CVE4", "source": "real_cve", "source_ref": "https://nvd.nist.gov/vuln/detail/CVE-2018-13784", "language": "php", "label": "safe"}
 {"id": "cryptopals-17", "group_id": "cryptopals-17", "source": "ctf", "source_ref": "https://cryptopals.com/sets/3/challenges/17", "language": "python", "label": "vulnerable"}
 {"id": "cryptopals-47", "group_id": "cryptopals-47", "source": "ctf", "source_ref": "https://cryptopals.com/sets/6/challenges/47", "language": "python", "label": "vulnerable"}
 {"id": "picoctf-magic", "group_id": "picoctf-magic", "source": "ctf", "source_ref": "https://ctftime.org/task/6795", "language": "python", "label": "vulnerable"}

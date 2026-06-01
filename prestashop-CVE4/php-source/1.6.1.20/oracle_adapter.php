@@ -57,10 +57,17 @@ function main($argc, $argv) {
                 }
                 $ciphertext = $argv[2];
                 $key = $argv[3];
+                $start = microtime(true);
 
                 // Unpack: "iv_b64:hmac:base64(raw_ct)"
                 $colon_pos = strpos($ciphertext, ':');
                 if ($colon_pos === false) {
+                    // Malformed cookie is still one decrypt query -> log it as invalid.
+                    $log_path = getenv('ORACLE_LOG');
+                    if ($log_path !== false && $log_path !== '') {
+                        file_put_contents($log_path, sprintf("{\"valid\": %s, \"elapsed_ms\": %.3f}\n",
+                            'false', (microtime(true) - $start) * 1000.0), FILE_APPEND);
+                    }
                     echo json_encode(['status' => 'success', 'plaintext_b64' => '']) . "\n";
                     break;
                 }
@@ -78,6 +85,13 @@ function main($argc, $argv) {
                     $result_b64 = '';
                 } else {
                     $result_b64 = base64_encode($result);
+                }
+
+                // One JSON line per decrypt call (reward telemetry), matching the other adapters' ORACLE_LOG format.
+                $log_path = getenv('ORACLE_LOG');
+                if ($log_path !== false && $log_path !== '') {
+                    file_put_contents($log_path, sprintf("{\"valid\": %s, \"elapsed_ms\": %.3f}\n",
+                        $result_b64 !== '' ? 'true' : 'false', (microtime(true) - $start) * 1000.0), FILE_APPEND);
                 }
 
                 echo json_encode([

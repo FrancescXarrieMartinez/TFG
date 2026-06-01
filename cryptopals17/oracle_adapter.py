@@ -74,9 +74,8 @@ def main(argv):
         if len(raw) > 0:
             pad_byte = raw[-1]
             if 1 <= pad_byte <= BLOCK_SIZE and raw[-pad_byte:] == bytes([pad_byte]) * pad_byte:
-                plaintext = raw[:-pad_byte]
-                # Non-empty sentinel when plaintext is empty (all-padding block)
-                result_b64 = base64.b64encode(plaintext if plaintext else b"\x00").decode()
+                # Leak only one bit: fixed sentinel on VALID padding (no plaintext leak)
+                result_b64 = base64.b64encode(b"\x01").decode()
 
         _log_oracle(bool(result_b64), (time.time() - start) * 1000.0)
         print(json.dumps({"status": "success", "plaintext_b64": result_b64}))

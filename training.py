@@ -12,7 +12,6 @@ from peft import LoraConfig, get_peft_model, PeftModel
 from trl import GRPOConfig, GRPOTrainer
 
 model_name = "/data/upftfg31/fxarrie/devstral-small-2507"
-max_seq_length = 4096
 
 # Held-out test groups (mirrored from sft_training.py so SFT and GRPO see the same train set)
 TEST_GROUP_IDS = {"cve-2016-0736", "prestashop-CVE4"}
@@ -90,13 +89,19 @@ def _check_oracle_api(code):
     hits = sum(1 for p in _ORACLE_API_SIGNALS if re.search(p, code))
     return hits >= 3
 
-_NOT_VULN_KEYWORDS = {"hmac", "mac", "authenticate", "integrity", "tamper"}
+# Distinct integrity concepts; hmac and mac collapse to one concept via \bh?mac\b.
+_NOT_VULN_CONCEPTS = [
+    r'\bh?mac\b',
+    r'\bauthenticat\w*\b',
+    r'\bintegrity\b',
+    r'\btamper\w*\b',
+]
 
 def _score_not_vulnerable(text):
     lower = text.lower()
     if not re.search(r'\bnot\s+vulnerable\b', lower):
         return 0.0
-    hits = sum(1 for kw in _NOT_VULN_KEYWORDS if kw in lower)
+    hits = sum(1 for p in _NOT_VULN_CONCEPTS if re.search(p, lower))
     return 1.0 if hits >= 2 else 0.5
 
 def _count_log_calls(log_path):
@@ -161,8 +166,12 @@ def verifiable_reward_function(prompts, completions, test_case_inputs, test_case
                 run_stdout = (exc.stdout or b'').decode('utf-8', errors='replace') if isinstance(exc.stdout, bytes) else (exc.stdout or '')
             total_calls = _count_log_calls(tmp_log)
             found_valid = _log_has_valid_padding(tmp_log)
-            if plaintext in run_stdout.strip():
+            if plaintext in run_stdout.strip() and total_calls >= 256:
                 score = 1.0
+            elif plaintext in run_stdout.strip():
+                # recovered plaintext but without real oracle interaction -> reward
+                # hacking; cap at the dynamic-effort tier, do not grant 1.0
+                score = max(score, 0.2)
             elif total_calls >= 256 and found_valid:
                 score = max(score, 0.5)
             elif total_calls >= 200:
@@ -184,7 +193,8 @@ training_args = GRPOConfig(
     learning_rate=5e-6,
     per_device_train_batch_size=1,
     gradient_accumulation_steps=4,
-    max_prompt_length=2048,
+    seed=42,
+    max_prompt_length=4096,
     max_completion_length=1024,
     num_generations=4,
     bf16=True,

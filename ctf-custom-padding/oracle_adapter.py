@@ -91,7 +91,8 @@ def _padding_oracle(state, key):
     msg = fib_unpad(raw)
     if msg is None:
         return ""
-    return base64.b64encode(msg if msg else b"\x00").decode()  # sentinel for empty-but-valid
+    # Leak only one bit: fixed sentinel on VALID padding (no plaintext leak)
+    return base64.b64encode(b"\x01").decode()
 
 
 def main(argv):

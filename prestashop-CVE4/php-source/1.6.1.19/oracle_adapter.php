@@ -60,6 +60,7 @@ function main($argc, $argv) {
                 }
                 $ciphertext = $argv[2];
                 $key = $argv[3];
+                $start = microtime(true);
 
                 // Unpack: base64(iv_bytes || raw_ct) + 6-digit-length
                 $combined = base64_decode(substr($ciphertext, 0, -6));
@@ -79,11 +80,17 @@ function main($argc, $argv) {
                     $pad_byte = ord($raw_out[strlen($raw_out) - 1]);
                     if ($pad_byte >= 1 && $pad_byte <= IV_SIZE) {
                         if (substr($raw_out, -$pad_byte) === str_repeat(chr($pad_byte), $pad_byte)) {
-                            $plaintext = substr($raw_out, 0, -$pad_byte);
-                            // Use a non-empty sentinel when plaintext is empty (all-padding block)
-                            $result_b64 = strlen($plaintext) > 0 ? base64_encode($plaintext) : base64_encode("\x00");
+                            // Leak only one bit: fixed sentinel on VALID padding (no plaintext leak)
+                            $result_b64 = base64_encode("\x01");
                         }
                     }
+                }
+
+                // One JSON line per decrypt call (reward telemetry), matching the other adapters' ORACLE_LOG format.
+                $log_path = getenv('ORACLE_LOG');
+                if ($log_path !== false && $log_path !== '') {
+                    file_put_contents($log_path, sprintf("{\"valid\": %s, \"elapsed_ms\": %.3f}\n",
+                        $result_b64 !== '' ? 'true' : 'false', (microtime(true) - $start) * 1000.0), FILE_APPEND);
                 }
 
                 echo json_encode([
