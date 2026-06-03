@@ -12,6 +12,7 @@ import os
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 os.environ["HF_DATASETS_OFFLINE"] = "1"
 import re
+import sys
 import json
 import argparse
 import tempfile
@@ -25,7 +26,8 @@ from peft import PeftModel
 MODEL_NAME = "/data/upftfg31/fxarrie/devstral-small-2507"
 TEST_GROUP_IDS = {"cve-2016-0736", "prestashop-CVE4"}
 GENERATION_SEED = 42
-TEMPERATURE = 0.3
+SAMPLE_TEMPERATURE = 0.8
+SAMPLE_K = 5
 MAX_NEW_TOKENS = 1024
 
 CONFIG_MAP = {
@@ -65,13 +67,13 @@ def _check_oracle_api(code):
     hits = sum(1 for p in _ORACLE_API_SIGNALS if re.search(p, code))
     return hits >= 3
 
-_NOT_VULN_KEYWORDS = {"hmac", "mac", "authenticate", "integrity", "tamper"}
+_NOT_VULN_CONCEPTS = [r'\bh?mac\b', r'\bauthenticat\w*\b', r'\bintegrity\b', r'\btamper\w*\b']
 
 def _score_not_vulnerable(text):
     lower = text.lower()
     if not re.search(r'\bnot\s+vulnerable\b', lower):
         return 0.0
-    hits = sum(1 for kw in _NOT_VULN_KEYWORDS if kw in lower)
+    hits = sum(1 for p in _NOT_VULN_CONCEPTS if re.search(p, lower))
     return 1.0 if hits >= 2 else 0.5
 
 def _count_log_calls(log_path):
@@ -149,6 +151,9 @@ def score_entry(generated_text, entry):
             [php_bin, oracle_path, "encrypt", plaintext, key],
             capture_output=True, text=True, timeout=10,
         )
+        if enc.returncode != 0 or not enc.stdout.strip():
+            print(f"ERROR: adapter encrypt failed for {entry['group_id']}: {enc.stderr}",
+                  file=sys.stderr, flush=True)
         ciphertext = json.loads(enc.stdout)["ciphertext"]
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, dir='/tmp') as f:
@@ -215,7 +220,7 @@ def aggregate(per_entry):
     vuln_entries = [e for e in per_entry if e["ground_truth_verdict"] == "VULNERABLE"]
     exploit_gen_rate = sum(1 for e in vuln_entries if e["generated_code"]) / n_vuln if n_vuln else 0.0
     syntax_valid_rate = sum(1 for e in vuln_entries if e["syntax_valid"]) / n_vuln if n_vuln else 0.0
-    esr = sum(1 for e in vuln_entries if e["reward_tier"] == 1.0) / n_vuln if n_vuln else 0.0
+    esr = sum(1 for e in vuln_entries if e["reward_tier"] >= 0.999) / n_vuln if n_vuln else 0.0
 
     # Reward distribution
     tier_dist = {"0.0": 0, "0.1": 0, "0.2": 0, "0.5": 0, "1.0": 0}
@@ -231,7 +236,7 @@ def aggregate(per_entry):
     verdict_acc_safe = sum(1 for e in safe_entries if e["verdict_correct"]) / n_safe if n_safe else 0.0
     reasoning_score_safe = sum(e["reward_tier"] for e in safe_entries) / n_safe if n_safe else 0.0
 
-    return {
+    metrics = {
         "accuracy": round(accuracy, 4),
         "precision": round(precision, 4),
         "recall": round(recall, 4),
@@ -245,13 +250,42 @@ def aggregate(per_entry):
         "reasoning_score_safe": round(reasoning_score_safe, 4),
     }
 
+    # Sample-mode extras: mean success fraction across the k samples per entry.
+    sample_entries = [e for e in per_entry if "success_fraction" in e]
+    if sample_entries:
+        all_sf = [e["success_fraction"] for e in sample_entries]
+        vuln_sf = [e["success_fraction"] for e in sample_entries if e["ground_truth_verdict"] == "VULNERABLE"]
+        metrics["mean_success_fraction"] = round(sum(all_sf) / len(all_sf), 4) if all_sf else 0.0
+        metrics["mean_success_fraction_vuln"] = round(sum(vuln_sf) / len(vuln_sf), 4) if vuln_sf else 0.0
+    return metrics
+
+
+def generate_completion(model, tokenizer, prompt_text, do_sample, temperature):
+    """Generate a single completion. Greedy when do_sample is False (temperature unused)."""
+    inputs = tokenizer(prompt_text, return_tensors="pt").to(model.device)
+    gen_kwargs = dict(
+        max_new_tokens=MAX_NEW_TOKENS,
+        do_sample=do_sample,
+        pad_token_id=tokenizer.pad_token_id,
+    )
+    if do_sample:
+        gen_kwargs["temperature"] = temperature
+    with torch.no_grad():
+        outputs = model.generate(**inputs, **gen_kwargs)
+    generated_ids = outputs[0][inputs["input_ids"].shape[1]:]
+    return tokenizer.decode(generated_ids, skip_special_tokens=True), len(generated_ids)
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, choices=["A", "B", "C", "D"])
+    parser.add_argument("--mode", choices=["greedy", "sample"], default="greedy",
+                        help="greedy: one deterministic completion per entry (headline eval). "
+                             "sample: k sampled completions per entry, with per-entry success fractions.")
     args = parser.parse_args()
 
     config = args.config
+    mode = args.mode
     info = CONFIG_MAP[config]
     print(f"Evaluating Configuration {config}: {info['description']}", flush=True)
     print(f"Adapter: {info['adapter_path']}", flush=True)
@@ -279,7 +313,13 @@ def main():
     print(f"Test set: {len(test_set)} entries from groups {sorted(TEST_GROUP_IDS)}", flush=True)
 
     # Generate and score
-    torch.manual_seed(GENERATION_SEED)
+    do_sample = (mode == "sample")
+    gen_temperature = SAMPLE_TEMPERATURE if do_sample else None
+    k = SAMPLE_K if do_sample else 1
+    print(f"Decoding mode: {mode} (do_sample={do_sample}, temperature={gen_temperature}, k={k})", flush=True)
+    if not do_sample:
+        torch.manual_seed(GENERATION_SEED)
+
     per_entry = []
     for i, entry in enumerate(test_set):
         print(f"\n--- Entry {i+1}/{len(test_set)} (group: {entry['group_id']}, verdict: {entry['test_case_outputs']['verdict']}) ---", flush=True)
@@ -290,29 +330,36 @@ def main():
             add_generation_prompt=True,
         )
 
-        inputs = tokenizer(prompt_text, return_tensors="pt").to(model.device)
-
-        with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=MAX_NEW_TOKENS,
-                do_sample=True,
-                temperature=TEMPERATURE,
-                pad_token_id=tokenizer.pad_token_id,
-            )
-
-        generated_ids = outputs[0][inputs["input_ids"].shape[1]:]
-        generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
-
-        print(f"Generated {len(generated_ids)} tokens", flush=True)
-
-        result = score_entry(generated_text, entry)
-        result["entry_index"] = i
-        result["group_id"] = entry["group_id"]
-        per_entry.append(result)
-
-        print(f"  Verdict: predicted={result['predicted_verdict']}, correct={result['verdict_correct']}", flush=True)
-        print(f"  Reward tier: {result['reward_tier']}", flush=True)
+        if not do_sample:
+            # Greedy: one deterministic completion per entry (headline eval).
+            generated_text, n_tok = generate_completion(model, tokenizer, prompt_text, False, None)
+            print(f"Generated {n_tok} tokens", flush=True)
+            result = score_entry(generated_text, entry)
+            result["entry_index"] = i
+            result["group_id"] = entry["group_id"]
+            per_entry.append(result)
+            print(f"  Verdict: predicted={result['predicted_verdict']}, correct={result['verdict_correct']}", flush=True)
+            print(f"  Reward tier: {result['reward_tier']}", flush=True)
+        else:
+            # Sample: k completions with a fixed per-entry seed for reproducibility.
+            torch.manual_seed(GENERATION_SEED + i)
+            sample_results = []
+            for s in range(k):
+                generated_text, n_tok = generate_completion(model, tokenizer, prompt_text, True, SAMPLE_TEMPERATURE)
+                sr = score_entry(generated_text, entry)
+                sample_results.append(sr)
+                print(f"  Sample {s+1}/{k}: {n_tok} tokens, predicted={sr['predicted_verdict']}, reward_tier={sr['reward_tier']}", flush=True)
+            reward_tiers = [sr["reward_tier"] for sr in sample_results]
+            success_fraction = sum(1 for t in reward_tiers if t >= 0.999) / k
+            # Representative per-entry result = first sample (keeps all existing per-entry metrics intact).
+            result = dict(sample_results[0])
+            result["entry_index"] = i
+            result["group_id"] = entry["group_id"]
+            result["sample_reward_tiers"] = reward_tiers
+            result["success_fraction"] = round(success_fraction, 4)
+            result["samples"] = sample_results
+            per_entry.append(result)
+            print(f"  Success fraction (reward_tier>=0.999 over {k} samples): {success_fraction:.4f}", flush=True)
 
     # Aggregate
     metrics = aggregate(per_entry)
@@ -327,7 +374,9 @@ def main():
         "adapter_path": info["adapter_path"],
         "test_set": [f"{e['group_id']}-{'vuln' if e['ground_truth_verdict']=='VULNERABLE' else 'safe'}" for e in per_entry],
         "generation_settings": {
-            "temperature": TEMPERATURE,
+            "mode": mode,
+            "temperature": gen_temperature,
+            "k": k,
             "seed": GENERATION_SEED,
             "max_new_tokens": MAX_NEW_TOKENS,
         },
@@ -335,7 +384,7 @@ def main():
         "aggregate_metrics": metrics,
     }
 
-    output_path = f"eval_results_{config}.json"
+    output_path = f"eval_results_{config}_sample.json" if do_sample else f"eval_results_{config}.json"
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
     print(f"\nSaved results to {output_path}", flush=True)
