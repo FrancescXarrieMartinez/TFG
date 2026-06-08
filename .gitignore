@@ -8,3 +8,13 @@ cve-2016-0736/**/oracle
 cve-2019-12422/**/*.class
 cve-2010-2057/**/*.class
 cve-2010-3300/**/*.class
+devstral-small-2/
+devstral-sft-lora/
+devstral-rlvr-c-lora/
+devstral-rlvr-d-lora/
+outputs_sft/
+outputs_rlvr/
+unsloth_compiled_cache/
+_cluster_backup/
+*.before-*
+*OLD*
